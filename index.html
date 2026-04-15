@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Prototipo Planificación Antioquia 2040</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 700px; margin: 30px auto; background: #f4f7f6; }
+        #chat-box { border: 1px solid #ddd; height: 450px; overflow-y: auto; padding: 20px; border-radius: 12px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .user { color: #2c3e50; font-weight: bold; margin-top: 10px; }
+        .ai { color: #16a085; background: #e8f8f5; padding: 10px; border-radius: 8px; margin-bottom: 20px; line-height: 1.5; }
+        .input-area { margin-top: 20px; display: flex; gap: 10px; }
+        input { flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
+        button { padding: 12px 20px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Agente de Planificación Pública</h2>
+    <p><small>Basado en el Plan Estratégico Agenda Antioquia 2040</small></p>
+    
+    <div id="chat-box"></div>
+    
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ej: ¿Qué recomiendas para Turbo?">
+        <button onclick="enviarMensaje()">Consultar</button>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        async function enviarMensaje() {
+            const input = document.getElementById("userInput");
+            const box = document.getElementById("chat-box");
+            const mensaje = input.value;
+            if (!mensaje) return;
+
+            box.innerHTML += `<div class="user">Usted: ${mensaje}</div>`;
+            input.value = "";
+
+            try {
+                // Llamada al server local para obtener la respuesta del agente
+                const response = await fetch('http://localhost:8000/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mensaje: mensaje })
+                });
+                
+                const data = await response.json();
+                const respuestaFormateada = marked.parse(data.respuesta); //Dar formato Markdown a la respuesta
+                box.innerHTML += `<div class="ai"><strong>Agente:</strong><br>${respuestaFormateada}</div>`;
+                box.scrollTop = box.scrollHeight;
+            } catch (error) {
+                box.innerHTML += `<div style="color:red">Error de conexión con el Agente. Asegúrate que Python esté corriendo.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
