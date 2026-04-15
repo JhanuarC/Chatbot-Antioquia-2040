@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 #Cargar variables de entorno (API Key)
 load_dotenv()#Iba a usar una variable de entorno para la API Key, pero por simplicidad la dejo directamente en el código. No dejen la api key expuesta en un proyecto real.
-genai.configure(api_key="AIzaSyDCLLlrteejc3AycZ6HdoQL3Ih3oxRYGIY")#Pongan la API key, recomiendo gemini porque es gratis
+genai.configure(api_key="")#Pongan la API key, recomiendo gemini porque es gratis
 
 try:
     df_municipios = pd.read_csv("Catedra G8/base_mock.csv")#Cambien el path si el archivo CSV no está en la misma carpeta que este script
