@@ -1,56 +1,583 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Prototipo Planificación Antioquia 2040</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; max-width: 700px; margin: 30px auto; background: #f4f7f6; }
-        #chat-box { border: 1px solid #ddd; height: 450px; overflow-y: auto; padding: 20px; border-radius: 12px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .user { color: #2c3e50; font-weight: bold; margin-top: 10px; }
-        .ai { color: #16a085; background: #e8f8f5; padding: 10px; border-radius: 8px; margin-bottom: 20px; line-height: 1.5; }
-        .input-area { margin-top: 20px; display: flex; gap: 10px; }
-        input { flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
-        button { padding: 12px 20px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototipo Planificación Antioquia 2040</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --navy:        #1a2744;
+    --navy-light:  #253360;
+    --blue-mid:    #2e4a8c;
+    --accent:      #3a7bd5;
+    --green-send:  #27ae60;
+    --green-hover: #219a52;
+    --bg:          #eef2f7;
+    --card:        #ffffff;
+    --border:      #d4dce8;
+    --text:        #1a2744;
+    --muted:       #6b7a99;
+    --white:       #ffffff;
+    --shadow:      0 2px 12px rgba(26,39,68,.09);
+    --map-hi:      #27ae60;
+    --map-md:      #f39c12;
+    --map-lo:      #e74c3c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    zoom: 2;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 50vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+  }
+
+  /* ── HEADER ─────────────────────────────────── */
+  header {
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    height: 48px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.28);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+
+  .brand-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #3a7bd5, #27ae60);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .brand h1 {
+    font-size: 16px; font-weight: 700; color: var(--white);
+    letter-spacing: .01em;
+  }
+  .brand h1 span { color: #7eb8f7; }
+  .brand p { font-size: 11px; color: #a0b4d0; font-weight: 300; margin-top: 1px; }
+
+  .header-user {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 7px;
+    padding: 6px 13px;
+    color: var(--white);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .header-user:hover { background: rgba(255,255,255,.15); }
+
+  .user-avatar {
+    width: 26px; height: 26px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* ── NAV ────────────────────────────────────── */
+  nav {
+    background: var(--navy-light);
+    display: flex;
+    padding: 0 10px;
+    gap: 2px;
+    border-bottom: 2px solid rgba(255,255,255,.07);
+  }
+
+  .tab {
+    padding: 7px 12px;
+    font-size: 12px; font-weight: 500;
+    color: #8fa5c8;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    display: flex; align-items: center; gap: 5px;
+    transition: color .2s, border-color .2s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: #c0d0e8; }
+  .tab.active {
+    color: var(--white);
+    border-color: var(--accent);
+    background: rgba(58,123,213,.1);
+  }
+
+  /* ── MAIN GRID ──────────────────────────────── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 4px;
+    padding: 2px 8px;
+    width: 100%;
+  }
+
+  /* ── CHAT PANEL ─────────────────────────────── */
+  .chat-panel {
+    background: var(--card);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    height: calc(50vh - 82px);
+    animation: fadeUp .4s ease;
+  }
+
+  #chat-box {
+    flex: 1;
+    padding: 10px 10px 6px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #chat-box::-webkit-scrollbar { width: 4px; }
+  #chat-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Bot message */
+  .msg-bot {
+    display: flex; align-items: flex-start; gap: 10px;
+    animation: fadeUp .3s ease;
+  }
+  .bot-avatar {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg,#dbeafe,#bfdbfe);
+    border: 1.5px solid #93c5fd;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .bot-bubble {
+    background: #f0f5ff;
+    border: 1px solid #c7d9f5;
+    border-radius: 3px 10px 10px 10px;
+    padding: 9px 12px;
+    max-width: 78%;
+    font-size: 13px; line-height: 1.45; color: var(--navy);
+  }
+  .bot-bubble p  { margin: 0 0 5px; }
+  .bot-bubble p:last-child { margin-bottom: 0; }
+  .bot-bubble ul, .bot-bubble ol { margin: 5px 0 5px 18px; }
+  .bot-bubble li { margin-bottom: 3px; }
+  .bot-bubble strong { font-weight: 600; }
+  .bot-bubble h1,.bot-bubble h2,.bot-bubble h3 { font-size: 14px; margin: 7px 0 4px; }
+
+  /* Suggestion chips */
+  .suggestions {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 4px 0 4px 44px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: transparent; border: none;
+    color: var(--accent); font-size: 13px; font-weight: 500;
+    cursor: pointer; padding: 3px 0;
+    font-family: inherit; text-align: left;
+    transition: color .2s, transform .15s;
+  }
+  .chip::before { content: '•'; color: #93c5fd; font-size: 16px; }
+  .chip:hover   { color: #2e63b8; transform: translateX(4px); }
+
+  /* User message */
+  .msg-user {
+    display: flex; justify-content: flex-end;
+    animation: fadeUp .3s ease;
+  }
+  .user-bubble {
+    background: var(--accent); color: white;
+    border-radius: 10px 3px 10px 10px;
+    padding: 8px 12px;
+    max-width: 70%;
+    font-size: 13px; line-height: 1.4;
+  }
+
+  /* Typing dots */
+  .typing { display: flex; align-items: flex-start; gap: 10px; }
+  .typing-dots {
+    background: #f0f5ff; border: 1px solid #c7d9f5;
+    border-radius: 3px 12px 12px 12px;
+    padding: 10px 16px;
+    display: flex; gap: 5px; align-items: center;
+  }
+  .typing-dots span {
+    width: 6px; height: 6px;
+    background: #93c5fd; border-radius: 50%;
+    animation: bounce 1.2s ease infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .typing-dots span:nth-child(3) { animation-delay: .4s; }
+
+  /* Error */
+  .msg-error {
+    background: #fef2f2; border: 1px solid #fca5a5;
+    border-radius: 7px; padding: 9px 13px;
+    font-size: 13px; color: #b91c1c;
+    animation: fadeUp .3s ease;
+  }
+
+  /* ── INPUT BAR ──────────────────────────────── */
+  .input-area {
+    padding: 7px 8px;
+    border-top: 1px solid var(--border);
+    background: #fafbfd;
+    display: flex; gap: 6px; align-items: center;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    border: 1px solid #a0b4cc;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px; font-family: inherit;
+    color: var(--text); background: #d8e3ee; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(58,123,213,.18);
+  }
+  input[type="text"]::placeholder { color: #4a5a72; font-weight: 500; }
+
+  button.send-btn {
+    background: var(--green-send); color: white;
+    border: none; border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    transition: background .2s, transform .1s;
+    letter-spacing: .02em;
+  }
+  button.send-btn:hover  { background: var(--green-hover); }
+  button.send-btn:active { transform: scale(.97); }
+
+  /* ── SIDEBAR ────────────────────────────────── */
+  .sidebar {
+    display: flex; flex-direction: column; gap: 6px;
+    height: calc(50vh - 82px);
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .side-card {
+    background: var(--card);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    animation: fadeUp .5s ease;
+  }
+  .map-card { animation-delay: .1s; }
+
+  .card-head {
+    background: linear-gradient(135deg, var(--navy), var(--blue-mid));
+    padding: 6px 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .card-head h3 {
+    font-size: 11px; font-weight: 600; color: white;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: #27ae60; border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+
+  /* Stats */
+  .stat-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #f0f3f8;
+    cursor: default;
+    transition: background .15s;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row:hover { background: #f7faff; }
+
+  .stat-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .ic-pov { background: #fef3e2; }
+  .ic-edu { background: #edf4ff; }
+  .ic-hlt { background: #e8f8f1; }
+
+  .stat-info { flex: 1; min-width: 0; }
+  .stat-label {
+    font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1px;
+  }
+  .stat-value {
+    font-size: 15px; font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace; color: var(--navy);
+    white-space: nowrap;
+  }
+  .stat-value .unit {
+    font-size: 10px; font-family: inherit; font-weight: 500;
+    color: var(--muted); margin-left: 2px;
+  }
+
+  .badge {
+    font-size: 10px; font-weight: 600;
+    padding: 3px 7px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .b-warn { background: #fef3e2; color: #d68910; }
+  .b-ok   { background: #e8f8f1; color: #1e8449; }
+
+  /* Map */
+  .map-area { padding: 10px; background: #f5f8fd; }
+  svg.amap { width: 100%; aspect-ratio: 1/.95; display: block; }
+  .map-legend {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 7px 10px 10px;
+    border-top: 1px solid #eef1f6;
+  }
+  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .leg-dot { width: 9px; height: 9px; border-radius: 2px; }
+
+  /* ── ANIMATIONS ─────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30%          { transform: translateY(-6px); }
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .6; transform: scale(1.3); }
+  }
+</style>
 </head>
 <body>
 
-    <h2>Agente de Planificación Pública</h2>
-    <p><small>Basado en el Plan Estratégico Agenda Antioquia 2040</small></p>
-    
-    <div id="chat-box"></div>
-    
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Ej: ¿Qué recomiendas para Turbo?">
-        <button onclick="enviarMensaje()">Consultar</button>
+<!-- ── HEADER ── -->
+<header>
+  <div class="brand">
+    <div class="brand-icon">📊</div>
+    <div>
+      <h1>Inversión <span>Antioquia IA</span></h1>
+      <p>Asistente inteligente para la planificación pública municipal</p>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        async function enviarMensaje() {
-            const input = document.getElementById("userInput");
-            const box = document.getElementById("chat-box");
-            const mensaje = input.value;
-            if (!mensaje) return;
+  </div>
+  <div class="header-user">
+    <div class="user-avatar">👤</div>
+    Bienvenido, Usuario ▾
+  </div>
+</header>
 
-            box.innerHTML += `<div class="user">Usted: ${mensaje}</div>`;
-            input.value = "";
+<!-- ── NAV ── -->
+<nav>
+  <div class="tab active">⊞ Dashboard</div>
+  <div class="tab">🏛 Datos Municipales</div>
+  <div class="tab">📋 Reportes</div>
+  <div class="tab">⚙ Configuración</div>
+</nav>
 
-            try {
-                // Llamada al server local para obtener la respuesta del agente
-                const response = await fetch('http://localhost:8000/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mensaje: mensaje })
-                });
-                
-                const data = await response.json();
-                const respuestaFormateada = marked.parse(data.respuesta); //Dar formato Markdown a la respuesta
-                box.innerHTML += `<div class="ai"><strong>Agente:</strong><br>${respuestaFormateada}</div>`;
-                box.scrollTop = box.scrollHeight;
-            } catch (error) {
-                box.innerHTML += `<div style="color:red">Error de conexión con el Agente. Asegúrate que Python esté corriendo.</div>`;
-            }
-        }
-    </script>
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- Chat panel -->
+  <div class="chat-panel">
+    <div id="chat-box">
+
+      <!-- Saludo inicial -->
+      <div class="msg-bot">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-bubble">¡Hola! <strong>¿En qué puedo ayudarte hoy?</strong></div>
+      </div>
+
+      <!-- Sugerencias -->
+      <div class="suggestions">
+        <button class="chip" onclick="useSuggestion(this)">¿Dónde invertir para reducir pobreza?</button>
+        <button class="chip" onclick="useSuggestion(this)">Municipios con mayor deserción escolar</button>
+        <button class="chip" onclick="useSuggestion(this)">Recomendaciones en salud rural</button>
+      </div>
+
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Escribe tu consulta aquí..."
+             onkeydown="if(event.key==='Enter') enviarMensaje()">
+      <button class="send-btn" onclick="enviarMensaje()">Enviar</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Diagnóstico rápido -->
+    <div class="side-card">
+      <div class="card-head">
+        <div class="live-dot"></div>
+        <h3>Diagnóstico Rápido</h3>
+      </div>
+      <div class="stat-row">
+        <div class="stat-icon ic-pov">💰</div>
+        <div class="stat-info">
+          <div class="stat-label">Tasa de Pobreza</div>
+          <div class="stat-value">32.5<span class="unit">%</span></div>
+        </div>
+        <span class="badge b-warn">▲ Alto</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-icon ic-edu">🎓</div>
+        <div class="stat-info">
+          <div class="stat-label">Deserción Escolar</div>
+          <div class="stat-value">18.4<span class="unit">%</span></div>
+        </div>
+        <span class="badge b-warn">▲ Medio</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-icon ic-hlt">🏥</div>
+        <div class="stat-info">
+          <div class="stat-label">Acceso a Salud</div>
+          <div class="stat-value">65<span class="unit">Ctrs.</span></div>
+        </div>
+        <span class="badge b-ok">✓ Activo</span>
+      </div>
+    </div>
+
+    <!-- Mapa -->
+    <div class="side-card map-card">
+      <div class="card-head">
+        <div class="live-dot"></div>
+        <h3>Mapa de Inversión</h3>
+      </div>
+      <div class="map-area">
+        <svg class="amap" viewBox="0 0 260 250" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ms"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.13"/></filter>
+          </defs>
+          <polygon points="30,20 90,15 95,60 50,78 25,63"     fill="#27ae60" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="90,15 150,18 145,68 95,60"          fill="#f39c12" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="150,18 210,28 200,78 145,68"        fill="#27ae60" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="25,63 50,78 52,128 18,118"          fill="#e74c3c" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="95,60 145,68 140,118 90,112"        fill="#27ae60" stroke="white" stroke-width="1.5" filter="url(#ms)" opacity=".95"/>
+          <polygon points="145,68 200,78 195,138 140,118"      fill="#f39c12" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="52,128 90,112 85,170 42,175"        fill="#f39c12" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="200,78 240,88 233,148 195,138"      fill="#e74c3c" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="85,170 140,118 195,138 183,198 92,205" fill="#27ae60" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="18,118 52,128 42,175 14,162"        fill="#e74c3c" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <polygon points="92,205 183,198 173,240 98,244"      fill="#f39c12" stroke="white" stroke-width="1.2" filter="url(#ms)" opacity=".92"/>
+          <circle cx="116" cy="90" r="4.5" fill="white" stroke="#2e4a8c" stroke-width="1.8"/>
+          <text x="122" y="94" font-family="IBM Plex Sans,sans-serif" font-size="7.5" fill="#1a2744" font-weight="600">Medellín</text>
+        </svg>
+      </div>
+      <div class="map-legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--map-hi)"></div> Alta inversión</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--map-md)"></div> Media</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--map-lo)"></div> Baja</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const box   = () => document.getElementById('chat-box');
+  const input = () => document.getElementById('userInput');
+
+  function scrollBottom() {
+    const b = box(); b.scrollTop = b.scrollHeight;
+  }
+
+  function appendUser(msg) {
+    const d = document.createElement('div');
+    d.className = 'msg-user';
+    d.innerHTML = `<div class="user-bubble">${msg}</div>`;
+    box().appendChild(d);
+    scrollBottom();
+  }
+
+  function appendBot(html) {
+    const d = document.createElement('div');
+    d.className = 'msg-bot';
+    d.innerHTML = `<div class="bot-avatar">🤖</div><div class="bot-bubble">${html}</div>`;
+    box().appendChild(d);
+    scrollBottom();
+  }
+
+  function appendError(msg) {
+    const d = document.createElement('div');
+    d.className = 'msg-error';
+    d.textContent = msg;
+    box().appendChild(d);
+    scrollBottom();
+  }
+
+  function showTyping() {
+    const d = document.createElement('div');
+    d.className = 'typing';
+    d.id = 'typing-indicator';
+    d.innerHTML = `
+      <div class="bot-avatar">🤖</div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>`;
+    box().appendChild(d);
+    scrollBottom();
+    return d;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  async function enviarMensaje() {
+    const mensaje = input().value.trim();
+    if (!mensaje) return;
+
+    appendUser(mensaje);
+    input().value = '';
+    showTyping();
+
+    try {
+      const response = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mensaje })
+      });
+
+      const data = await response.json();
+      removeTyping();
+      appendBot(marked.parse(data.respuesta));
+
+    } catch (error) {
+      removeTyping();
+      appendError('Error de conexión con el Agente. Asegúrate que Python esté corriendo.');
+    }
+  }
+
+  function useSuggestion(btn) {
+    input().value = btn.textContent;
+    enviarMensaje();
+  }
+</script>
 </body>
 </html>

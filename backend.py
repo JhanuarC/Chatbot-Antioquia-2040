@@ -1,4 +1,4 @@
-#Por favor instala las siguientes librerías antes de ejecutar el código:
+ #Por favor instala las siguientes librerías antes de ejecutar el código:
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +11,7 @@ load_dotenv()#Iba a usar una variable de entorno para la API Key, pero por simpl
 genai.configure(api_key="")#Pongan la API key, recomiendo gemini porque es gratis
 
 try:
-    df_municipios = pd.read_csv("Catedra G8/base_mock.csv")#Cambien el path si el archivo CSV no está en la misma carpeta que este script
+    df_municipios = pd.read_csv("base_mock.csv")#Cambien el path si el archivo CSV no está en la misma carpeta que este script
 except FileNotFoundError:
     print("Error: No se encontró el archivo CSV.")
     exit()
@@ -56,6 +56,10 @@ chat = model.start_chat(enable_automatic_function_calling=True)
 
 
 #Configurar el servidor FastAPI para conectar con el frontend
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
 app = FastAPI()
 
 #Esto conecta el HTML del frontend con el backend
@@ -65,6 +69,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Servir archivos estáticos y HTML
+@app.get("/")
+async def read_root():
+    return FileResponse("index.html")
 
 class ChatRequest(BaseModel):
     mensaje: str
