@@ -1,7 +1,7 @@
 # Chatbot Antioquia 2040
 Este es el código para el chatbot para la plataforma Antioquia 2040
 
-##¿Qué es Antioquia 2040?
+## ¿Qué es Antioquia 2040?
 
 Para 2040, Antioquia quiere ser un territorio en el que todas las personas puedan vivir con
 dignidad, bienestar y sin discriminación, donde haya oportunidades que permitan cerrar las
